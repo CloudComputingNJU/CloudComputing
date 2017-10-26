@@ -16,6 +16,7 @@ import java.net.Socket;
  * time: {$time}
  **/
 public class Commenter implements Runnable{
+    public static final int COMMENTER_PORT = 9999;
     private MongoCollection<Document> sortedCollection;
 
     public Commenter(){
@@ -34,14 +35,15 @@ public class Commenter implements Runnable{
     }
 
     public void run() {
+        System.out.println("waiting for connection on port: "+ COMMENTER_PORT);
         try {
-            Socket skt = new ServerSocket(9999).accept();
-            MongoCursor<Document> itr= sortedCollection.find().iterator();
+            Socket skt = new ServerSocket(COMMENTER_PORT).accept();
             System.out.println("connected by "+skt.getRemoteSocketAddress());
+            MongoCursor<Document> itr= sortedCollection.find().iterator();
             Writer writer = new PrintWriter(skt.getOutputStream());
             while(itr.hasNext()){
                 Document comment = itr.next();
-
+                writer.write(comment.toJson());
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -51,8 +53,4 @@ public class Commenter implements Runnable{
     public static void main(String[] args) {
         new Thread(new Commenter()).start();
     }
-}
-
-class SortedCollection{
-
 }
