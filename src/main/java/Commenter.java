@@ -44,6 +44,13 @@ public class Commenter implements Runnable{
             while(itr.hasNext()){
                 Document comment = itr.next();
                 writer.write(comment.toJson());
+                writer.write("\n");
+                writer.flush();
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();

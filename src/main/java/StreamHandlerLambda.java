@@ -19,7 +19,7 @@ import java.io.Serializable;
  * time: {$time}
  **/
 public class StreamHandlerLambda {
-    public static final String STREAM_SERVER_HOST = "localhost";
+    public static final String STREAM_SERVER_HOST = "114.212.245.176";
     public static final int STREAM_SERVER_PORT = 9999;
 
 
