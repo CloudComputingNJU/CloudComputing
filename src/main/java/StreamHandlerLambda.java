@@ -1,6 +1,9 @@
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
@@ -8,6 +11,8 @@ import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.bson.Document;
 import scala.Tuple2;
+
+import java.io.Serializable;
 
 /**
  * author: Qiao Hongbo
@@ -26,9 +31,9 @@ public class StreamHandlerLambda {
                 .setAppName("Team13");
         JavaStreamingContext jssc = new JavaStreamingContext(conf, Durations.seconds(1));
         JavaReceiverInputDStream<String> lines = jssc.socketTextStream(STREAM_SERVER_HOST, STREAM_SERVER_PORT);
-        JavaDStream<Document> docs = lines.map(Document::parse);
-        JavaPairDStream<String, Integer> commentPairs = docs.mapToPair(doc -> new Tuple2<>("" + doc.get("comment_id"), 1));
-        JavaPairDStream<String, Integer> commentCounts = commentPairs.reduceByKey((cnt1, cnt2) -> cnt1 + cnt2);
+        JavaDStream<Document> docs = lines.map((Function<String, Document> & Serializable) (Document::parse));
+        JavaPairDStream<String, Integer> commentPairs = docs.mapToPair((PairFunction<Document, String, Integer> & Serializable)(doc -> new Tuple2<>("" + doc.get("comment_id"), 1)));
+        JavaPairDStream<String, Integer> commentCounts = commentPairs.reduceByKey((Function2<Integer, Integer, Integer> & Serializable) ((cnt1, cnt2) -> cnt1 + cnt2));
         commentCounts.print(10);
         jssc.start();
         try {
