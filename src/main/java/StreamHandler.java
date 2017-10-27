@@ -2,7 +2,10 @@ import com.mongodb.util.JSON;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.MapFunction;
+import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
@@ -30,9 +33,25 @@ public class StreamHandler {
                 .setAppName("Team13");
         JavaStreamingContext jssc = new JavaStreamingContext(conf, Durations.seconds(1));
         JavaReceiverInputDStream<String> lines = jssc.socketTextStream(STREAM_SERVER_HOST, STREAM_SERVER_PORT);
-        JavaDStream<Document> docs = lines.map(Document::parse);
-        JavaPairDStream<String, Integer> commentPairs = docs.mapToPair(doc -> new Tuple2<>("" + doc.get("comment_id"), 1));
-        JavaPairDStream<String, Integer> commentCounts = commentPairs.reduceByKey((cnt1, cnt2) -> cnt1 + cnt2);
+        JavaDStream<Document> docs = lines.map(new Function<String, Document>() {
+            @Override
+            public Document call(String s) throws Exception {
+                return Document.parse(s);
+            }
+        });
+//        JavaPairDStream<String, Integer> commentPairs = docs.mapToPair(doc -> new Tuple2<>("" + doc.get("comment_id"), 1));
+        JavaPairDStream<String, Integer> commentPairs = docs.mapToPair(new PairFunction<Document, String, Integer>() {
+            @Override
+            public Tuple2<String, Integer> call(Document document) throws Exception {
+                return new Tuple2<>((String) document.get("comment_id"), 1);
+            }
+        });
+        JavaPairDStream<String, Integer> commentCounts = commentPairs.reduceByKey(new Function2<Integer, Integer, Integer>() {
+            @Override
+            public Integer call(Integer integer, Integer integer2) throws Exception {
+                return integer+integer2;
+            }
+        });
         commentCounts.print(10);
         jssc.start();
         try {
