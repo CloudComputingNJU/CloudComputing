@@ -50,7 +50,7 @@ public class StreamHandler {
         logger.error("error");
 
         StreamHandler handler = new StreamHandler();
-        handler.defineProcess();
+
         handler.start();
     }
 }
