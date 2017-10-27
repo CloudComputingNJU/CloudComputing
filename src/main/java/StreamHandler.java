@@ -20,28 +20,20 @@ import scala.Tuple2;
 public class StreamHandler {
     public static final String STREAM_SERVER_HOST = "localhost";
     public static final int STREAM_SERVER_PORT = 9999;
-    private JavaStreamingContext jssc;
-    public StreamHandler(){
+
+
+    public void start() {
         SparkConf conf = new SparkConf()
                 .setMaster("spark://pyq-master:7077")
 //                .set("SPARK_LOCAL_IP", "114.212.242.132")
 //                .set("SPARK_")
                 .setAppName("Team13");
-        jssc = new JavaStreamingContext(conf, Durations.seconds(1));
-
-//        JavaReceiverInputDStream<String> lines = jssc.file
-    }
-
-    public void defineProcess() {
+        JavaStreamingContext jssc = new JavaStreamingContext(conf, Durations.seconds(1));
         JavaReceiverInputDStream<String> lines = jssc.socketTextStream(STREAM_SERVER_HOST, STREAM_SERVER_PORT);
         JavaDStream<Document> docs = lines.map(Document::parse);
-        JavaPairDStream<String, Integer> commentPairs = docs.mapToPair(doc-> new Tuple2<>(""+doc.get("comment_id"), 1));
-        JavaPairDStream<String, Integer> commentCounts = commentPairs.reduceByKey((cnt1, cnt2)->cnt1+cnt2);
+        JavaPairDStream<String, Integer> commentPairs = docs.mapToPair(doc -> new Tuple2<>("" + doc.get("comment_id"), 1));
+        JavaPairDStream<String, Integer> commentCounts = commentPairs.reduceByKey((cnt1, cnt2) -> cnt1 + cnt2);
         commentCounts.print(10);
-        System.out.println("-----");
-    }
-
-    public void start(){
         jssc.start();
         try {
             jssc.awaitTermination();
