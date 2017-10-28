@@ -38,19 +38,6 @@ public class StreamHandler implements Serializable {
     public static final int STREAM_SERVER_PORT = 9999;
     public boolean hasHandshake = false;
 
-    public void startSocketServer() {
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Socket skt = new ServerSocket(9090).accept();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-    }
-
 
     public void start() throws IOException {
 //        Writer writer = null;
@@ -106,46 +93,30 @@ public class StreamHandler implements Serializable {
             //将握手标志更新，只握一次
             hasHandshake = true;
             //服务器返回成功，---握手协议完成，进行TCP通信
-//-------------------------------------
-//                MongoCursor<Document> itr = sortedCollection.find().iterator();
-//            Writer writer = new PrintWriter(skt.getOutputStream());
-//                while (itr.hasNext()) {
-//                    Document comment = itr.next();
-//                writer.write(comment.toJson());
-//            int i = 1;
-//            while (true) {
-//                String str = "count: " + (i++);
-//                responseClient(ByteBuffer.wrap(str.getBytes()), true);
-//                Thread.sleep(500);
-//            }
-//
 
-
-// }
         }
-//        final SerializedWriter writer = new SerializedWriter(skt.getOutputStream());
-
 
         SparkConf conf = new SparkConf()
 //                .setMaster("spark://pyq-master:7077")
                 .setMaster("local[2]")
-//                .set("SPARK_LOCAL_IP", "114.212.242.132")
-//                .set("SPARK_")
                 .set("spark.driver.host", "localhost")
-                //.set("spark.jars","/home/puyvqi/test/CloudComputing/target/spark-streaming-jingdong-1.0-SNAPSHOT.jar")
 
                 .setAppName("Team13");
-        //.setJars(new String[]{"/home/puyvqi/test/CloudComputing/target/spark-streaming-jingdong-1.0-SNAPSHOT.jar","/home/puyvqi/test/CloudComputing/target/dependency/mongo-java-driver-3.4.2.jar"});
         JavaStreamingContext jssc = new JavaStreamingContext(conf, Durations.seconds(1));
 //        jssc.sparkContext().addJar("/home/puyvqi/test/CloudComputing/target/spark-streaming-jingdong-1.0-SNAPSHOT.jar");
 //        jssc.sparkContext().addJar("/home/puyvqi/test/CloudComputing/target/dependency/mongo-java-driver-3.4.2.jar");
+
+        // 从socket读取流
         JavaReceiverInputDStream<String> lines = jssc.socketTextStream(STREAM_SERVER_HOST, STREAM_SERVER_PORT);
+
+        // 转换为Document
         JavaDStream<Document> docs = lines.map(new Function<String, Document>() {
             @Override
             public Document call(String s) throws Exception {
                 return Document.parse(s);
             }
         });
+
         JavaPairDStream<String, Integer> commentPairs = docs.mapToPair(new PairFunction<Document, String, Integer>() {
             @Override
             public Tuple2<String, Integer> call(Document document) throws Exception {
@@ -190,9 +161,6 @@ public class StreamHandler implements Serializable {
 //                for (;;) {
                 for (Tuple2<String, Integer> item : list) {
                     ByteBuffer byteBuf = ByteBuffer.wrap(item.toString().getBytes());
-//                    writer.write(item.toString());
-//                    writer.write("\n");
-//                    writer.flush();
                     OutputStream out = skt.getOutputStream();
                     int first = 0x00;
                     //是否是输出最后的WebSocket响应片段

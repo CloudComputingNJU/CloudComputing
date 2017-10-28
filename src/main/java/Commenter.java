@@ -47,7 +47,7 @@ public class Commenter implements Runnable{
                 writer.write("\n");
                 writer.flush();
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(0);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
